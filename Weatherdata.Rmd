@@ -1,0 +1,147 @@
+---
+title: "Climate data for the revegetation locations"
+author: "Marte Fandrem"
+date: "2023-10-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r Packages needed}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(ggthemes) #usikker
+library(hydroTSM)
+library(zoo)
+library(lubridate)
+
+
+``` 
+
+#Visualize local weather data
+
+Data retrieved from aklima.no from weather stations around Namsos and Åfjord (two near Namsos and 1 near Åfjord)
+
+```{r Upload datasets, include=FALSE}
+klima_afjord <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_afjord.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)
+klima_namsos <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_namsos.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)                          
+
+#Denne funksjonen får til å laste inn datasettene med spesialkarakterer
+
+#Alle tall er registert som characters i Namsos-settet. Disse må gjøres om.
+
+klima_afjord <- klima_afjord %>% mutate_at(c('Mean_temp'), as.numeric)
+klima_namsos <- klima_namsos %>% mutate_at(c('Mean_temp', 'Max_temp', 'Min_temp', 'Precipitation'), as.numeric)
+
+#Det er ingen nedbørsdata registrert i Namsos-datasettet. Må se på klimadataene på seklima.no på nytt
+
+#Lage nye kolonner med kun måned og år
+klima_afjord$Year <- floor_date(klima_afjord$Time, "year")
+klima_afjord$Month <- floor_date(klima_afjord$Time, "month")
+klima_afjord$month <- month(klima_afjord$Time)
+klima_afjord$year <- year(klima_afjord$Time)
+
+```
+
+##Precipitation Åfjord
+```{r}
+afjord.ts = zoo(klima_afjord$Precipitation, order.by= klima_afjord$Time)
+hydroplot(afjord.ts, var.type="Precipitation", var.unit="mm", xlab="Year", ylab="Precipitation (mm)")
+```
+
+###Daily precipitation
+```{r}
+###Plot daily precipitation and temperature##
+afjord <- ggplot(klima_afjord, aes(x = Time, y = Precipitation))
+afjord + geom_col()
+
+```
+
+The daily mean is about 5mm with a few (3) extreme events of >50mm that will have been rain and not snow. 
+```{r Means and extremes daily precipitation}
+klima_afjord %>%
+  summarise(mean= mean(Precipitation), max=max(Precipitation))
+```
+Daily means grouped by month of the year
+```{r Daily means grouped to months}
+klima_afjord %>%
+  group_by(month) %>%
+  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
+```
+Daily means grouped by specific months
+```{r Daily means grouped by specific month}
+klima_afjord %>%
+  group_by(Month) %>%
+  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
+```
+
+###Yearly precipitation
+
+```{r}
+klima_afjord %>%
+  filter(year != 2023 ) %>%
+  group_by(year)%>%
+  summarise(sum = sum(Precipitation))
+```
+Mean annual precipitation
+```{r}
+prc_year <-  klima_afjord %>%
+  filter(year != 2023 ) %>%
+  group_by(year)%>%
+  summarise(sum = sum(Precipitation))
+
+mean(prc_year$sum)
+```
+
+  
+  
+Number of days with precipitation each year
+```{r Days with rain}
+klima_afjord %>%
+  group_by(year) %>%
+  summarise (days_precipitation=sum(Precipitation>0))
+
+```
+
+###Monthly precipitation
+```{r Plot monthly precipitation}
+afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
+afjord.monthly
+df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
+df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
+plot_afjord.monthly <- ggplot(df_afjord.monthly, aes(x = Month, y = Precipitation))
+plot_afjord.monthly + geom_col()
+```
+```{r total precipitation by specific month }
+klima_afjord %>%
+  group_by(year, month) %>%
+summarise_at(vars(Precipitation), list(sum = sum))
+```
+```{r total precipitation by month }
+afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
+afjord.monthly
+df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
+df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
+df_afjord.monthly$Year <-as.numeric(format(df_afjord.monthly$Month, "%Y"))
+df_afjord.monthly$Month2 <-as.numeric(format(df_afjord.monthly$Month, "%m"))
+df_afjord.monthly %>%
+  group_by(Month2) %>%
+summarise_at(vars(Precipitation), list(mean= mean))
+```
+The precipitation is usually less in the first half of the growing season, i.o. spring and early summer (April, May, June) with an average of 101.5 mm/month. The average precipitation in the second half of the growing season (July, August and September) is 169.5 mm/month. September is the wettest month of the year with an mean of 216.0 mm, while April and June are the driest (approx. 97.5mm) 
+```
+
+
+
