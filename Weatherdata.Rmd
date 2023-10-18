@@ -143,7 +143,30 @@ June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 17
 Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
 The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, August 170.9mm), but more varied autumn with a somewhat drier September (92.0mm), while wet October (198.9mm), and dry November (58.9mm).
 
+# Temperatures, Åfjord
 
+```{r}
+afjord_meantemp <- ggplot(klima_afjord, aes(x = Time, y = Mean_temp))
+afjord_meantemp + geom_col()
+
+```
+*Averaged temperatures per month of the year*
+```{r}
+klima_afjord %>%
+  group_by(month) %>%
+summarise_at(vars(Min_temp, Mean_temp, Max_temp), list(mean = mean), na.rm = TRUE)
+
+```
+
+*Average temperatures through the growing season (May to October)*
+```{r}
+growing_season_afjord <- klima_afjord %>%
+  filter(month >4 & month <11) 
+
+growing_season_afjord%>%
+summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRUE)
+
+```
 
 
 
