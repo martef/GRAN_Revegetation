@@ -7,12 +7,13 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(tibble.print_min = Inf)
 ```
 
 
 
 
-```{r Packages needed}
+```{r Packages needed, include=FALSE}
 library(dplyr)
 library(readr)
 library(ggplot2)
@@ -20,7 +21,7 @@ library(ggthemes) #usikker
 library(hydroTSM)
 library(zoo)
 library(lubridate)
-
+library(tidyverse)
 
 ``` 
 
@@ -63,7 +64,6 @@ hydroplot(afjord.ts, var.type="Precipitation", var.unit="mm", xlab="Year", ylab=
 
 ###Daily precipitation
 ```{r}
-###Plot daily precipitation and temperature##
 afjord <- ggplot(klima_afjord, aes(x = Time, y = Precipitation))
 afjord + geom_col()
 
@@ -85,6 +85,8 @@ Daily means grouped by specific months
 klima_afjord %>%
   group_by(Month) %>%
   summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
+tibble.print_min = Inf
+
 ```
 
 ###Yearly precipitation
@@ -118,22 +120,12 @@ klima_afjord %>%
 ###Monthly precipitation
 ```{r Plot monthly precipitation}
 afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
-afjord.monthly
 df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
 df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
 plot_afjord.monthly <- ggplot(df_afjord.monthly, aes(x = Month, y = Precipitation))
 plot_afjord.monthly + geom_col()
 ```
-```{r total precipitation by specific month }
-klima_afjord %>%
-  group_by(year, month) %>%
-summarise_at(vars(Precipitation), list(sum = sum))
-```
 ```{r total precipitation by month }
-afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
-afjord.monthly
-df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
-df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
 df_afjord.monthly$Year <-as.numeric(format(df_afjord.monthly$Month, "%Y"))
 df_afjord.monthly$Month2 <-as.numeric(format(df_afjord.monthly$Month, "%m"))
 df_afjord.monthly %>%
@@ -141,6 +133,18 @@ df_afjord.monthly %>%
 summarise_at(vars(Precipitation), list(mean= mean))
 ```
 The precipitation is usually less in the first half of the growing season, i.o. spring and early summer (April, May, June) with an average of 101.5 mm/month. The average precipitation in the second half of the growing season (July, August and September) is 169.5 mm/month. September is the wettest month of the year with an mean of 216.0 mm, while April and June are the driest (approx. 97.5mm) 
+
+```{r total precipitation by specific month }
+klima_afjord %>%
+  group_by(year, month) %>%
+summarise_at(vars(Precipitation), list(sum = sum))
+
+```
+The precipitation in April 2019, before we started up the experiment was extremely low (only 20.3mm), while September 2019 was extremely wet (320.8mm).November 2019 was likewise dry (48.6mm). 
+June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 177.9mm).
+Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
+The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, August 170.9mm), but more varied autumn with a somewhat drier September (92.0mm), while wet October (198.9mm), and dry November (58.9mm).
+
 ```
 
 
