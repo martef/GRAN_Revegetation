@@ -25,7 +25,7 @@ library(tidyverse)
 
 ``` 
 
-#Visualize local weather data
+# Visualize local weather data
 
 Data retrieved from aklima.no from weather stations around Namsos and Åfjord (two near Namsos and 1 near Åfjord)
 
@@ -56,13 +56,13 @@ klima_afjord$year <- year(klima_afjord$Time)
 
 ```
 
-##Precipitation Åfjord
+## Precipitation Åfjord
 ```{r}
 afjord.ts = zoo(klima_afjord$Precipitation, order.by= klima_afjord$Time)
 hydroplot(afjord.ts, var.type="Precipitation", var.unit="mm", xlab="Year", ylab="Precipitation (mm)")
 ```
 
-###Daily precipitation
+### Daily precipitation
 ```{r}
 afjord <- ggplot(klima_afjord, aes(x = Time, y = Precipitation))
 afjord + geom_col()
@@ -74,13 +74,13 @@ The daily mean is about 5mm with a few (3) extreme events of >50mm that will hav
 klima_afjord %>%
   summarise(mean= mean(Precipitation), max=max(Precipitation))
 ```
-Daily means grouped by month of the year
+*Daily means grouped by month of the year*
 ```{r Daily means grouped to months}
 klima_afjord %>%
   group_by(month) %>%
   summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
 ```
-Daily means grouped by specific months
+*Daily means grouped by specific months*
 ```{r Daily means grouped by specific month}
 klima_afjord %>%
   group_by(Month) %>%
@@ -89,7 +89,7 @@ tibble.print_min = Inf
 
 ```
 
-###Yearly precipitation
+### Yearly precipitation
 
 ```{r}
 klima_afjord %>%
@@ -97,7 +97,7 @@ klima_afjord %>%
   group_by(year)%>%
   summarise(sum = sum(Precipitation))
 ```
-Mean annual precipitation
+*Mean annual precipitation*
 ```{r}
 prc_year <-  klima_afjord %>%
   filter(year != 2023 ) %>%
@@ -107,9 +107,7 @@ prc_year <-  klima_afjord %>%
 mean(prc_year$sum)
 ```
 
-  
-  
-Number of days with precipitation each year
+*Number of days with precipitation each year*
 ```{r Days with rain}
 klima_afjord %>%
   group_by(year) %>%
@@ -117,7 +115,7 @@ klima_afjord %>%
 
 ```
 
-###Monthly precipitation
+### Monthly precipitation
 ```{r Plot monthly precipitation}
 afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
 df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
@@ -145,7 +143,7 @@ June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 17
 Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
 The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, August 170.9mm), but more varied autumn with a somewhat drier September (92.0mm), while wet October (198.9mm), and dry November (58.9mm).
 
-```
+
 
 
 
