@@ -30,23 +30,35 @@ library(tidyverse)
 Data retrieved from aklima.no from weather stations around Namsos and Åfjord (two near Namsos and 1 near Åfjord)
 
 ```{r Upload datasets, include=FALSE}
-klima_afjord <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_afjord.csv', 
+klima_afjord <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_afjord_komplett.csv', 
                                   delim = ';',
                                   locale = locale('se', encoding = 'ISO8859-1'),
                                   col_names = TRUE)
-klima_namsos <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_namsos.csv', 
+klima_namsosstasjon <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_namsosstasjon.csv', 
                                   delim = ';',
                                   locale = locale('se', encoding = 'ISO8859-1'),
-                                  col_names = TRUE)                          
+                                  col_names = TRUE) 
+klima_overhalla <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_overhalla.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)
+klima_rodhammer <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_rodhammer.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)  
 
 #Denne funksjonen får til å laste inn datasettene med spesialkarakterer
 
 #Alle tall er registert som characters i Namsos-settet. Disse må gjøres om.
 
 klima_afjord <- klima_afjord %>% mutate_at(c('Mean_temp'), as.numeric)
-klima_namsos <- klima_namsos %>% mutate_at(c('Mean_temp', 'Max_temp', 'Min_temp', 'Precipitation'), as.numeric)
+klima_namsosstasjon <- klima_namsosstasjon %>% mutate_at(c('Mean_temp', 'Min_temp'), as.numeric)
 
-#Det er ingen nedbørsdata registrert i Namsos-datasettet. Må se på klimadataene på seklima.no på nytt
+
+```
+
+## Precipitation Åfjord
+```{r}
 
 #Lage nye kolonner med kun måned og år
 klima_afjord$Year <- floor_date(klima_afjord$Time, "year")
@@ -54,10 +66,6 @@ klima_afjord$Month <- floor_date(klima_afjord$Time, "month")
 klima_afjord$month <- month(klima_afjord$Time)
 klima_afjord$year <- year(klima_afjord$Time)
 
-```
-
-## Precipitation Åfjord
-```{r}
 afjord.ts = zoo(klima_afjord$Precipitation, order.by= klima_afjord$Time)
 hydroplot(afjord.ts, var.type="Precipitation", var.unit="mm", xlab="Year", ylab="Precipitation (mm)")
 ```
@@ -146,8 +154,8 @@ The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, Augus
 # Temperatures, Åfjord
 
 ```{r}
-afjord_meantemp <- ggplot(klima_afjord, aes(x = Time, y = Mean_temp))
-afjord_meantemp + geom_col()
+klima_afjord %>%
+ggplot(aes(x = Time, y = Mean_temp)) + geom_col()
 
 ```
 *Averaged temperatures per month of the year*
@@ -157,8 +165,35 @@ klima_afjord %>%
 summarise_at(vars(Min_temp, Mean_temp, Max_temp), list(mean = mean), na.rm = TRUE)
 
 ```
+*Plot average temperature through out the year*
+
+```{r}
+
+mean_temp_yearly <- klima_afjord %>%
+  group_by(month) %>%
+summarise_at(vars(Min_temp, Mean_temp, Max_temp), list(mean = mean), na.rm = TRUE)
+
+mean_temp_yearly %>%
+  pivot_longer(Min_temp_mean:Max_temp_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp)) +
+  geom_col() +
+  facet_wrap(vars(Means))
+```
+*Average temperatures by specific months and years*
+
+```{r }
+klima_afjord %>%
+  group_by(month, year) %>%
+summarise_at(vars(Min_temp, Mean_temp, Max_temp), list(mean = mean), na.rm = TRUE) %>%
+pivot_longer(Min_temp_mean:Max_temp_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(vars(year, Means), ncol=3)
+```
 
 *Average temperatures through the growing season (May to October)*
+
 ```{r}
 growing_season_afjord <- klima_afjord %>%
   filter(month >4 & month <11) 
@@ -168,5 +203,118 @@ summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRU
 
 ```
 
+```{r}
+klima_afjord %>%
+  filter(month >4 & month <11)%>%
+  group_by(year) %>%
+summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRUE)
+
+```
+## Precipitation Bangdalen
+
+Only precipitation data from Overhalla-Unnset (26mas), hopefully this is close enough to be similar to Bangdalen
+
+```{r}
+
+#Lage nye kolonner med kun måned og år
+klima_overhalla$Year <- floor_date(klima_overhalla$Time, "year")
+klima_overhalla$Month <- floor_date(klima_overhalla$Time, "month")
+klima_overhalla$month <- month(klima_overhalla$Time)
+klima_overhalla$year <- year(klima_overhalla$Time)
+```
+
+### Daily precipitation
+```{r}
+klima_overhalla%>%
+ggplot(aes(x = Time, y = Precipitation)) + geom_col()
+
+```
+
+The daily mean is about 5mm with a few (3) extreme events of >50mm that will have been rain and not snow. 
+```{r Means and extremes daily precipitation}
+klima_overhalla %>%
+  summarise_at(vars(Precipitation), list(mean=mean, max=max), na.rm = TRUE)
+```
+*Daily means grouped by month of the year*
+```{r Daily means grouped to months}
+klima_overhalla %>%
+  group_by(month) %>%
+  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
+```
+*Daily means grouped by specific months*
+```{r Daily means grouped by specific month}
+klima_overhalla %>%
+  group_by(year,month) %>%
+  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
+tibble.print_min = Inf
+
+```
+
+### Yearly precipitation
+
+```{r}
+klima_overhalla %>%
+  filter(year !=2023) %>%
+  group_by(year)%>%
+  summarise(sum = sum(Precipitation))
+```
+*Mean annual precipitation*
+```{r}
+prc_year <-  klima_overhalla %>%
+  filter(year != 2023 ) %>%
+  group_by(year)%>%
+  summarise(sum = sum(Precipitation))
+
+mean(prc_year$sum)
+```
+
+*Number of days with precipitation each year*
+```{r Days with rain}
+klima_overhalla %>%
+  group_by(year) %>%
+  summarise (days_precipitation=sum(Precipitation>0))
+```
+
+### Monthly precipitation
+```{r Plot monthly precipitation}
+afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
+df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
+df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
+plot_afjord.monthly <- ggplot(df_afjord.monthly, aes(x = Month, y = Precipitation))
+plot_afjord.monthly + geom_col()
+```
 
 
+```{r total precipitation by specific month }
+mean_prc_month_overhalla <-data.frame()%% 
+  klima_overhalla%>%
+  group_by(year, month) %>%
+summarise(sum=sum(Precipitation))
+
+mean_prc_month_overhalla %>%
+   group_by(month)%>%
+  summarise_at(mean(sum))
+  
+
+
+```
+
+```{r total precipitation by month }
+df_afjord.monthly$Year <-as.numeric(format(df_afjord.monthly$Month, "%Y"))
+df_afjord.monthly$Month2 <-as.numeric(format(df_afjord.monthly$Month, "%m"))
+df_afjord.monthly %>%
+  group_by(Month2) %>%
+summarise_at(vars(Precipitation), list(mean= mean))
+```
+The precipitation is usually less in the first half of the growing season, i.o. spring and early summer (April, May, June) with an average of 101.5 mm/month. The average precipitation in the second half of the growing season (July, August and September) is 169.5 mm/month. September is the wettest month of the year with an mean of 216.0 mm, while April and June are the driest (approx. 97.5mm) 
+
+```{r total precipitation by specific month }
+klima_afjord %>%
+  group_by(year, month) %>%
+summarise_at(vars(Precipitation), list(sum = sum))
+
+```
+The precipitation in April 2019, before we started up the experiment was extremely low (only 20.3mm), while September 2019 was extremely wet (320.8mm).November 2019 was likewise dry (48.6mm). 
+June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 177.9mm).
+Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
+The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, August 170.9mm), but more varied autumn with a somewhat drier September (92.0mm), while wet October (198.9mm), and dry November (58.9mm).
