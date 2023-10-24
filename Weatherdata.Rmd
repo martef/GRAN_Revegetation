@@ -10,9 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 options(tibble.print_min = Inf)
 ```
 
-
-
-
 ```{r Packages needed, include=FALSE}
 library(dplyr)
 library(readr)
@@ -78,23 +75,15 @@ afjord + geom_col()
 ```
 
 The daily mean is about 5mm with a few (3) extreme events of >50mm that will have been rain and not snow. 
-```{r Means and extremes daily precipitation}
+```{r}
 klima_afjord %>%
   summarise(mean= mean(Precipitation), max=max(Precipitation))
 ```
 *Daily means grouped by month of the year*
-```{r Daily means grouped to months}
+```{r}
 klima_afjord %>%
   group_by(month) %>%
   summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
-```
-*Daily means grouped by specific months*
-```{r Daily means grouped by specific month}
-klima_afjord %>%
-  group_by(Month) %>%
-  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
-tibble.print_min = Inf
-
 ```
 
 ### Yearly precipitation
@@ -116,7 +105,7 @@ mean(prc_year$sum)
 ```
 
 *Number of days with precipitation each year*
-```{r Days with rain}
+```{r}
 klima_afjord %>%
   group_by(year) %>%
   summarise (days_precipitation=sum(Precipitation>0))
@@ -124,14 +113,14 @@ klima_afjord %>%
 ```
 
 ### Monthly precipitation
-```{r Plot monthly precipitation}
+```{r}
 afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
 df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
 df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
 plot_afjord.monthly <- ggplot(df_afjord.monthly, aes(x = Month, y = Precipitation))
 plot_afjord.monthly + geom_col()
 ```
-```{r total precipitation by month }
+```{r}
 df_afjord.monthly$Year <-as.numeric(format(df_afjord.monthly$Month, "%Y"))
 df_afjord.monthly$Month2 <-as.numeric(format(df_afjord.monthly$Month, "%m"))
 df_afjord.monthly %>%
@@ -140,12 +129,18 @@ summarise_at(vars(Precipitation), list(mean= mean))
 ```
 The precipitation is usually less in the first half of the growing season, i.o. spring and early summer (April, May, June) with an average of 101.5 mm/month. The average precipitation in the second half of the growing season (July, August and September) is 169.5 mm/month. September is the wettest month of the year with an mean of 216.0 mm, while April and June are the driest (approx. 97.5mm) 
 
-```{r total precipitation by specific month }
+```{r}
 klima_afjord %>%
   group_by(year, month) %>%
 summarise_at(vars(Precipitation), list(sum = sum))
 
 ```
+
+```{r}
+df_afjord.monthly %>%
+ggplot(aes(x = as.factor(Month2), y = Precipitation)) + geom_boxplot()
+```
+
 The precipitation in April 2019, before we started up the experiment was extremely low (only 20.3mm), while September 2019 was extremely wet (320.8mm).November 2019 was likewise dry (48.6mm). 
 June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 177.9mm).
 Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
@@ -205,7 +200,7 @@ summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRU
 
 ```{r}
 klima_afjord %>%
-  filter(month >4 & month <11)%>%
+  filter(month >4 & month <10)%>%
   group_by(year) %>%
 summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRUE)
 
@@ -213,7 +208,7 @@ summarise_at(vars(Min_temp, Max_temp, Mean_temp), list(mean = mean), na.rm = TRU
 ## Precipitation Bangdalen
 
 Only precipitation data from Overhalla-Unnset (26mas), hopefully this is close enough to be similar to Bangdalen
-
+As the longterm annual data from Bangdalen 1930-2012 shows a trend of about 10% more precipitation, I adjust the data accordingly
 ```{r}
 
 #Lage nye kolonner med kun måned og år
@@ -221,33 +216,26 @@ klima_overhalla$Year <- floor_date(klima_overhalla$Time, "year")
 klima_overhalla$Month <- floor_date(klima_overhalla$Time, "month")
 klima_overhalla$month <- month(klima_overhalla$Time)
 klima_overhalla$year <- year(klima_overhalla$Time)
+klima_overhalla$Precipitation10 <- klima_overhalla$Precipitation *1.10
 ```
 
 ### Daily precipitation
 ```{r}
 klima_overhalla%>%
-ggplot(aes(x = Time, y = Precipitation)) + geom_col()
+ggplot(aes(x = Time, y = Precipitation10)) + geom_col()
 
 ```
 
-The daily mean is about 5mm with a few (3) extreme events of >50mm that will have been rain and not snow. 
-```{r Means and extremes daily precipitation}
+The daily mean is about 3.9mm with a few (4) extreme events of >50mm that will have been rain and not snow. 
+```{r}
 klima_overhalla %>%
-  summarise_at(vars(Precipitation), list(mean=mean, max=max), na.rm = TRUE)
+  summarise_at(vars(Precipitation10), list(mean=mean, max=max), na.rm = TRUE)
 ```
 *Daily means grouped by month of the year*
-```{r Daily means grouped to months}
+```{r}
 klima_overhalla %>%
   group_by(month) %>%
-  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
-```
-*Daily means grouped by specific months*
-```{r Daily means grouped by specific month}
-klima_overhalla %>%
-  group_by(year,month) %>%
-  summarise_at(vars(Precipitation), list(mean = mean)) #gives only the daily mean per month
-tibble.print_min = Inf
-
+  summarise_at(vars(Precipitation10), list(mean = mean)) #gives only the daily mean per month
 ```
 
 ### Yearly precipitation
@@ -256,65 +244,171 @@ tibble.print_min = Inf
 klima_overhalla %>%
   filter(year !=2023) %>%
   group_by(year)%>%
-  summarise(sum = sum(Precipitation))
+  summarise(sum = sum(Precipitation10))
 ```
 *Mean annual precipitation*
 ```{r}
 prc_year <-  klima_overhalla %>%
   filter(year != 2023 ) %>%
   group_by(year)%>%
-  summarise(sum = sum(Precipitation))
+  summarise(sum = sum(Precipitation10))
 
 mean(prc_year$sum)
 ```
 
 *Number of days with precipitation each year*
-```{r Days with rain}
+```{r}
 klima_overhalla %>%
   group_by(year) %>%
-  summarise (days_precipitation=sum(Precipitation>0))
+  summarise (days_precipitation=sum(Precipitation10>0))
 ```
 
 ### Monthly precipitation
-```{r Plot monthly precipitation}
-afjord.monthly <- aggregate(afjord.ts, as.yearmon(index(afjord.ts)), sum)
-df_afjord.monthly <-fortify.zoo(afjord.monthly, names=c("Month")) #How to convert a zoo file to a data frame with normal columns and headers
-df_afjord.monthly <-rename(df_afjord.monthly, Precipitation=afjord.monthly)
-plot_afjord.monthly <- ggplot(df_afjord.monthly, aes(x = Month, y = Precipitation))
-plot_afjord.monthly + geom_col()
+
+```{r}
+mean_prc_month_overhalla <-  klima_overhalla%>%
+  group_by(year, month) %>%
+summarise(sum=sum(Precipitation10))
+mean_prc_month_overhalla
+```
+
+```{r}
+mean_prc_month_overhalla %>%
+ggplot(aes(x = as.factor(month), y = sum)) + geom_boxplot()
 ```
 
 
-```{r total precipitation by specific month }
-mean_prc_month_overhalla <-data.frame()%% 
-  klima_overhalla%>%
-  group_by(year, month) %>%
-summarise(sum=sum(Precipitation))
-
+``` {r}
 mean_prc_month_overhalla %>%
    group_by(month)%>%
-  summarise_at(mean(sum))
+  summarise(mean=mean(sum))
   
-
-
+```
+```{r}
+klima_overhalla %>%
+ggplot(aes(x = Month, y = Precipitation10)) + geom_col()
 ```
 
-```{r total precipitation by month }
-df_afjord.monthly$Year <-as.numeric(format(df_afjord.monthly$Month, "%Y"))
-df_afjord.monthly$Month2 <-as.numeric(format(df_afjord.monthly$Month, "%m"))
-df_afjord.monthly %>%
-  group_by(Month2) %>%
-summarise_at(vars(Precipitation), list(mean= mean))
-```
-The precipitation is usually less in the first half of the growing season, i.o. spring and early summer (April, May, June) with an average of 101.5 mm/month. The average precipitation in the second half of the growing season (July, August and September) is 169.5 mm/month. September is the wettest month of the year with an mean of 216.0 mm, while April and June are the driest (approx. 97.5mm) 
-
-```{r total precipitation by specific month }
-klima_afjord %>%
+```{r}
+klima_overhalla %>%
   group_by(year, month) %>%
-summarise_at(vars(Precipitation), list(sum = sum))
+summarise_at(vars(Precipitation10), list(sum = sum))
 
 ```
-The precipitation in April 2019, before we started up the experiment was extremely low (only 20.3mm), while September 2019 was extremely wet (320.8mm).November 2019 was likewise dry (48.6mm). 
-June 2020 was another low (18.9mm), but with wet July and August (167.0mm and 177.9mm).
-Both May and June 2021 was dry (46.6.mm and 81.7mm), especially May. October same year had very high precipitation (319mm), with both September and November also being wet. 
-The whole summer of 2022 was wet (May 145.7mm, June 154.5mm, July 238.3mm, August 170.9mm), but more varied autumn with a somewhat drier September (92.0mm), while wet October (198.9mm), and dry November (58.9mm).
+*Mean precipitation within growing season
+
+```{r}
+mean_prc_growth_overhalla <-  klima_overhalla%>%
+  filter(month>4 & month <10) %>%
+  group_by(year, month) %>%
+summarise(sum=sum(Precipitation10))
+mean_prc_growth_overhalla
+```
+
+```{r}
+
+mean_prc_growth_overhalla %>%
+   group_by(month)%>%
+  summarise(mean=mean(sum))
+
+```
+  
+```{r}  
+mean_prc_growth_overhalla%>%  
+ggplot(aes(x = month, y = sum)) +
+  geom_col() +
+  facet_wrap(vars(year))
+```
+The mean precipitation is somewhat lower in the first half of the growing season (May, June, July) than in the late growing season (August, September), but the precipitation over the last 5 years has been very varied at Bangdalen (at least on the level of month, but quite similar on a seasonal and yearly scale). 
+ 
+
+The precipitation in April 2019, before we started up the experiment was extremely low (only 12mm), while September 2019 was extremely wet (287.6mm).November 2019 was likewise dry (59.2mm). 
+June 2020 was another low (34.2mm), but with somewhat wetter July and August (111.0mm and 74mm).
+Both May, June and July 2021 was dry (22.4, 74.1, 67), especially May. October same year had very high precipitation (242.7), with both September and November also being wet. 
+The whole summer of 2022 was wet, but more varied autumn with a very dry September (25.3), while wet October (199mm), and dry November (65).
+The whole of the summer 2023 has been medium to dry with a wet september and october.
+
+Bangdalen (Overhalla) has in general somewhat less rain than Åfjord, with an annual mean of 1578mm over the time period.
+
+
+
+# Temperatures, Bangdalen
+
+Temperatures from Namsos stasjon. It lies only 20mas and close to the fjord, which means the temperatures at Vestersetermyra (120mas) should be adjusted slightly. Bragazza 2008 uses -0.6oC per 100m change in altitude, which seems to be more or less the norm. I'll adjust similarily. 
+
+```{r}
+klima_namsosstasjon$Max_tempA <- klima_namsosstasjon$Max_temp -0.6
+klima_namsosstasjon$Min_tempA <- klima_namsosstasjon$Min_temp -0.6
+klima_namsosstasjon$Mean_tempA <- klima_namsosstasjon$Mean_temp -0.6
+  
+klima_namsosstasjon$Year <- floor_date(klima_namsosstasjon$Time, "year")
+klima_namsosstasjon$Month <- floor_date(klima_namsosstasjon$Time, "month")
+klima_namsosstasjon$month <- month(klima_namsosstasjon$Time)
+klima_namsosstasjon$year <- year(klima_namsosstasjon$Time)
+  
+```
+
+``` {r}
+klima_namsosstasjon %>%
+ggplot(aes(x = Time, y = Mean_tempA)) + geom_col()
+
+```
+*Averaged temperatures per month of the year*
+```{r}
+klima_namsosstasjon %>%
+  group_by(month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+
+```
+*Plot average temperature through out the year*
+
+```{r}
+
+mean_temp_yearly <- klima_namsosstasjon %>%
+  group_by(month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+
+mean_temp_yearly %>%
+  pivot_longer(Min_tempA_mean:Max_tempA_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp)) +
+  geom_col() +
+  facet_wrap(vars(Means))
+```
+*Average temperatures by specific months and years*
+```{r}
+
+klima_namsosstasjon %>%
+  group_by(year, month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+````
+
+
+```{r }
+klima_namsosstasjon %>%
+  filter(!is.na(Time))%>%
+  group_by(year, month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE) %>%
+pivot_longer(Min_tempA_mean:Max_tempA_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp), na.rm=TRUE) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(vars(year, Means), ncol=3)
+```
+
+*Average temperatures through the growing season (May to October)*
+
+```{r}
+growing_season_namsos <- klima_namsosstasjon %>%
+  filter(month >4 & month <11) 
+growing_season_namsos%>%
+summarise_at(vars(Min_tempA, Max_tempA, Mean_tempA), list(mean = mean), na.rm = TRUE)
+
+```
+
+```{r}
+klima_namsosstasjon %>%
+  filter(month >4 & month <10)%>%
+  group_by(year) %>%
+summarise_at(vars(Min_tempA, Max_tempA, Mean_tempA), list(mean = mean), na.rm = TRUE)
+
+```

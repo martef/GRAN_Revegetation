@@ -1,0 +1,231 @@
+---
+title: "Plant analysis data"
+author: "MarteFandrem"
+date: "2023-10-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Packages needed, include=FALSE}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(ggthemes) #usikker
+library(hydroTSM)
+library(zoo)
+library(lubridate)
+library(tidyverse)
+library(tidyr)
+
+``` 
+
+### Upload and clean dataset
+```{r Upload datasets, include=FALSE}
+df <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/Revegetering_alldata.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = FALSE)
+
+#need to switch rows and columns
+reveg = data.frame(t(df)) #Transposing
+names(reveg) <- reveg[1,] #Copying header names from row 1
+reveg <- reveg[-1,] #Removing row 1
+
+reveg$year <- substr(reveg$Date, 1,4) #Creating columns for year and month
+reveg$month <- substr(reveg$Date, 6,7)
+reveg <- reveg%>% rename(Location = Localition)
+reveg[reveg=='<1'] <- '0.1' #change all <1 to 0.1
+reveg <- reveg %>% mutate_at(c('Location', 'Sublocation', 'Block', 'Treatment', 'year', 'month'), as.factor)
+reveg <- reveg %>% mutate_at(c(7:36), as.numeric) #Change from character to numeric on multiple columns
+reveg <- reveg %>% 
+  mutate_at(c(9:36), ~replace_na(.,0)) #Replacing NAs with zeros
+
+
+```
+# Investigating data
+## Sphagnum
+
+*Overall Sphagnum cover changes per location*
+```{r}
+reveg%>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  group_by(year) %>%
+ggplot(aes(x = Location, y = Sphagnum)) +
+ geom_boxplot() +
+  facet_wrap(vars(year))
+```
+
+*Sphagnum cover changes per treatment*
+```{r}
+reveg%>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  group_by(year, Treatment) %>%
+ggplot(aes(x = Treatment, y = Sphagnum)) +
+ geom_boxplot() +
+  facet_wrap(vars(year))
+```
+
+*Sphagnum cover changes per treatment and location*
+```{r}
+reveg%>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  group_by(year, Treatment) %>%
+ggplot(aes(x = Treatment, y = Sphagnum)) +
+ geom_boxplot() +
+  facet_wrap(vars(year, Location))
+```
+## Changes in other functional groups than plants
+
+*Changes in cover in control plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='C')%>%
+  filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in mulch plots per location*
+
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='M')%>%
+  filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+
+*Changes in cover in sphagnum plots per location*
+
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment %in% c('S1', 'S2'))%>%
+  filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+## Changes in other functional plant groups - mosses and lichen
+
+*Changes in cover in control plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='C')%>%
+  filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in mulch plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='M')%>%
+  filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in sphagnum plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2') %>%
+  filter(Treatment %in% c('S1', 'S2')) %>%
+  filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen')) %>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+## Changes in other functional plant groups - graminoids
+
+*Changes in cover in control plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='C')%>%
+  filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in mulch plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='M')%>%
+  filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment %in% c('S1', 'S2')) %>%
+  filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+## Changes in other functional plant groups - heather/vitis-idea, vaccinium-bushes, narthecium
+
+*Changes in cover in control plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='C')%>%
+  filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in mulch plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment=='M')%>%
+  filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in sphagnum plots per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(Treatment %in% c('S1', 'S2'))%>%
+  filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
+ggplot(aes(x = functional_group, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
+*Changes in cover in bare peat only per location*
+```{r}
+reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
+  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
+  filter(functional_group =='Bare_peat') %>%
+ggplot(aes(x = Treatment, y = cover)) +
+ geom_boxplot() + theme(axis.text.x = element_text(angle = 90)) +
+  facet_wrap(vars(Location, year))
+```
