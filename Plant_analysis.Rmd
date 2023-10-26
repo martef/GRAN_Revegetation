@@ -52,8 +52,7 @@ reveg <- reveg %>%
 ```{r}
 reveg%>%
   filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
-  group_by(year) %>%
-ggplot(aes(x = Location, y = Sphagnum)) +
+  ggplot(aes(x = Location, y = Sphagnum)) +
  geom_boxplot() +
   facet_wrap(vars(year))
 ```
@@ -62,7 +61,6 @@ ggplot(aes(x = Location, y = Sphagnum)) +
 ```{r}
 reveg%>%
   filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
-  group_by(year, Treatment) %>%
 ggplot(aes(x = Treatment, y = Sphagnum)) +
  geom_boxplot() +
   facet_wrap(vars(year))
@@ -72,7 +70,6 @@ ggplot(aes(x = Treatment, y = Sphagnum)) +
 ```{r}
 reveg%>%
   filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
-  group_by(year, Treatment) %>%
 ggplot(aes(x = Treatment, y = Sphagnum)) +
  geom_boxplot() +
   facet_wrap(vars(year, Location))
@@ -83,7 +80,6 @@ ggplot(aes(x = Treatment, y = Sphagnum)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='C')%>%
   filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -95,7 +91,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='M')%>%
   filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -108,7 +103,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment %in% c('S1', 'S2'))%>%
   filter(functional_group %in% c('Dead_sph', 'Bare_peat', 'Litter', 'Mulch', 'Dead_wood'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -121,7 +115,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='C')%>%
   filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -132,7 +125,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='M')%>%
   filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -143,7 +135,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2') %>%
   filter(Treatment %in% c('S1', 'S2')) %>%
   filter(functional_group %in% c('Polytrichum', 'Racomitrium', 'Other_mosses', 'Livermosses', 'Lichen')) %>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -156,7 +147,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='C')%>%
   filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -167,7 +157,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='M')%>%
   filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -177,7 +166,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment %in% c('S1', 'S2')) %>%
   filter(functional_group %in% c('Carex', 'Trichophorum', 'Eriopherum', 'Sedges', 'Rhynchospora', 'Grasses'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -190,7 +178,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='C')%>%
   filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -201,7 +188,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment=='M')%>%
   filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
@@ -212,7 +198,6 @@ ggplot(aes(x = functional_group, y = cover)) +
 ```{r}
 reveg%>%
   pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") %>%
-  filter(Treatment!='Ref1' & Treatment!='Ref2')%>%
   filter(Treatment %in% c('S1', 'S2'))%>%
   filter(functional_group %in% c('Heathers', 'Blueberry', 'Narthecium'))%>%
 ggplot(aes(x = functional_group, y = cover)) +
