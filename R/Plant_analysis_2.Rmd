@@ -1,0 +1,98 @@
+---
+title: "Plant_analysis_2"
+author: "MarteFandrem"
+date: "2023-10-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Packages needed, include=FALSE}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+
+``` 
+
+### Upload and clean dataset
+```{r Upload datasets, include=FALSE}
+df <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/Revegetering_alldata.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = FALSE)
+
+#need to switch rows and columns
+reveg = data.frame(t(df)) #Transposing
+names(reveg) <- reveg[1,] #Copying header names from row 1
+reveg <- reveg[-1,] #Removing row 1
+
+reveg$year <- substr(reveg$Date, 1,4) #Creating columns for year and month
+reveg$month <- substr(reveg$Date, 6,7)
+reveg <- reveg%>% rename(Location = Localition) #Fix bad spelling
+reveg[reveg=='<1'] <- '0.1' #change all <1 to 0.1
+reveg <- reveg %>% mutate_at(c('Location', 'Sublocation', 'Block', 'Treatment', 'year', 'month'), as.factor)
+reveg <- reveg %>% mutate_at(c(7:36), as.numeric) #Change from character to numeric on multiple columns
+reveg <- reveg %>% 
+  mutate_at(c(9:36), ~replace_na(.,0)) #Replacing NAs with zeros
+
+reveg_long <-reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") 
+
+```
+
+#Checking distribution of data
+*Histograms of all species groups*
+
+```{r}
+reveg_long%>%
+  filter(functional_group %in% c('Sphagnum','Racomitrium', 'Polytrichum','Other_mosses','Livermosses','Lichen'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_wrap(~functional_group, scales="free_y")
+
+```
+```{r}
+reveg_long%>%
+  filter(functional_group %in% c('Carex','Trichophorum', 'Eriopherum','Sedges','Rhynchospora','Grasses'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_wrap(~functional_group, scales="free_y")
+
+```
+``` {r}
+reveg_long%>%
+  filter(functional_group %in% c('Heathers','Oxycoccus', 'Blueberry','Drosera','Narthecium','Herbs'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_wrap(~functional_group, scales="free_y")
+
+```
+``` {r}
+reveg_long%>%
+  filter(functional_group %in% c('Bare_peat','Mulch', 'Litter','Dead_sph','Dead_wood','Temp_Water'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_wrap(~functional_group, scales="free_y")
+
+```
+``` {r}
+reveg_long%>%
+  filter(functional_group %in% c('Bare_peat'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_grid(Location~year, scales="free_y")
+
+```
+``` {r}
+reveg_long%>%
+  filter(functional_group %in% c('Sphagnum'))%>%
+  ggplot(aes(x=cover)) +
+    geom_histogram() +
+  facet_grid(Location~year, scales="free_y")
+
+```
+

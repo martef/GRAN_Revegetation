@@ -11,9 +11,6 @@ options(tibble.print_min = Inf)
 ```
 
 ```{r Packages needed, include=FALSE}
-library(dplyr)
-library(readr)
-library(ggplot2)
 library(ggthemes) #usikker
 library(hydroTSM)
 library(zoo)

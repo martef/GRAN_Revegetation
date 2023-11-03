@@ -1,0 +1,602 @@
+---
+title: "Water data"
+author: "Marte Fandrem"
+format: html
+editor: visual
+---
+
+## Packages needed
+
+```{r Packages needed, include=FALSE, return=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+library(lubridate) #For handling time series data
+library(timetk)
+
+library(scales)   # to access breaks/formatting functions
+
+library(gridExtra) # for arranging plots
+
+```
+
+## Uploading the data
+
+```{r Upload datasets, include=FALSE, echo=FALSE}
+
+BSM1 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/BSM_1_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+BSM2 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/BSM_2_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+BSM3 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/BSM_3_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+HM1 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/HM_1_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+HM2 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/HM_2_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+HM3 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/HM_3_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+VSM1 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/VSM_1_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+VSM2 <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/VSM_2_compensated_ready.csv', 
+
+                                  delim = ';',
+
+                                  col_names = TRUE)
+
+```
+
+```{r Merge datasets, echo=FALSE, include=FALSE, return=FALSE, warning=FALSE}
+
+# Join multiple data.frames
+
+list_df = list(BSM1,BSM2,BSM3, VSM1,VSM2, HM1, HM2,HM3)
+
+wt_all <- list_df %>% reduce(full_join)
+
+```
+
+## Combine the Date and Time into a DateTime column
+
+```{r smaller cleanups, echo=FALSE, return=FALSE, include=FALSE}
+
+#Convert "Date" and "Time" columns to a DateTime object
+
+wt_all$DateTime <- as.POSIXct(paste(wt_all$Date, wt_all$Time), format = "%Y-%m-%d %H:%M:%S") 
+
+#Create columns for day, month and year
+
+wt_all$day <- day(wt_all$Date)
+
+wt_all$month <- month(wt_all$Date)
+
+wt_all$year <- year(wt_all$Date)
+
+#I might actually not needs these, as I discovered the summarise_by_time and all the other ...._by_time functions in the timetk-package
+
+#Remove the last dates in September 2023 from the dataset 
+
+wt_all <- wt_all%>%filter((between(Date, as.Date('2020-06-12'), as.Date('2023-09-01')))) 
+
+#Clean up the environment a bit. Remove excess dataframes
+rm(HM1, HM2, VSM1,VSM2, BSM1,BSM2, BSM3, list_df)
+```
+
+## Filter data for the growth season (May to October)
+
+I only want to include the data for the growth season. I'm including all of May and all of September for now (except for 2023, where we cut the data to end of August, as we retrieved the water loggers in the beginning of September). Maybe May needs to be shortened to mid, but lets look at the data first.
+
+```{r}
+
+season_data <- wt_all %>% 
+
+  filter((year >= 2020 & year < 2023) & (month >= 5 & month <= 9) | (year == 2023) & (month >= 5 & month<9)) 
+
+```
+
+## What I want to accomplish
+
+I need to aggregate the data to show:
+
+\- mean/max/min per day
+
+\- mean/max/min per month
+
+\- mean/max/min through growth season
+
+\- how many days with lower than -20cm per month through growth season
+
+## Plotting the raw data
+
+```{r echo=FALSE}
+plot_HM1_2020 <- wt_all %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year==2020)%>%
+  filter(LEVEL>-1)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(aes(x = Date, y = LEVEL), 
+            direction = 'mid',
+            linewidth = 1,
+            color = "black") +
+  xlab("Date 2020") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')
+
+plot_HM1_2021 <- wt_all %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year==2021)%>%
+  filter(LEVEL>-1)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(aes(x = Date, y = LEVEL), 
+            direction = 'mid',
+            linewidth = 1,
+            color = "black") +
+  xlab("Date 2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')
+
+plot_HM1_2022 <- wt_all %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year==2022)%>%
+  filter(LEVEL>-1)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(aes(x = Date, y = LEVEL), 
+            direction = 'mid',
+            linewidth = 1,
+            color = "black") +
+  xlab("Date 2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')
+
+plot_HM1_2023 <- wt_all %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year==2023)%>%
+  filter(LEVEL>-1)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(aes(x = Date, y = LEVEL), 
+            direction = 'mid',
+            linewidth = 1,
+            color = "black") +
+  xlab("Date 2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')
+
+grid.arrange(plot_HM1_2020, plot_HM1_2021, plot_HM1_2022, plot_HM1_2023, ncol=1)
+```
+
+The data from HM1 seems correct, with varied values throughout the time period and with a 'roof' at about 0cm, although the data from Jan to May 2021 seems incorrect both by being extremely low in the beginning of the year when the ground is frozen and covered by snow and extremely high (0.5m) in March to mid-May. HM1 is set on higher, drier grounds than HM2 and HM3, with shallow(-ish) peat. These values seems implausible.
+
+## Subsetting for only the growth period midMay-midSept
+
+Then we avoid the 'weird' data from the winter periods. I'm not really that interested in the winter time data anyways.
+
+```{r echo=FALSE, warning=FALSE}
+plot_HM1_2020_g <- season_data %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year=='2020') %>%
+  group_by(Date)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(linewidth=0.5) +
+  xlab("2020") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+
+plot_HM1_2021_g <- season_data %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM1_2022_g <- season_data %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM1_2023_g <- season_data %>%
+  filter(Station_ID=="HM1") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_HM1_2020_g, plot_HM1_2021_g, plot_HM1_2022_g, plot_HM1_2023_g, ncol=1, top='Water table at HM1')
+```
+
+The water table at HM1 is mainly up around 0cm, but with some dips down to as much as -30cm.
+
+```{r echo=FALSE, warning=FALSE}
+plot_HM2_2020_g <- season_data %>%
+  filter(Station_ID=="HM2") %>%
+  filter(year=='2020') %>%
+  group_by(Date)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2020") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+
+plot_HM2_2021_g <- season_data %>%
+  filter(Station_ID=="HM2") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM2_2022_g <- season_data %>%
+  filter(Station_ID=="HM2") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM2_2023_g <- season_data %>%
+  filter(Station_ID=="HM2") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_HM2_2020_g, plot_HM2_2021_g, plot_HM2_2022_g, plot_HM2_2023_g, ncol=1, top='Water table at HM2')
+```
+
+Not sure about HM2... It seems very little responsive after 2020, maybe also within 2020...
+
+I think this one as well is not functioning and I need to exclude the data. I think I can include 2020.
+
+```{r echo=FALSE}
+plot_HM3_2020_g <- season_data %>%
+  filter(Station_ID=="HM3") %>%
+  filter(year=='2020') %>%
+  group_by(Date)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2020") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+
+plot_HM3_2021_g <- season_data %>%
+  filter(Station_ID=="HM3") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM3_2022_g <- season_data %>%
+  filter(Station_ID=="HM3") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_HM3_2023_g <- season_data %>%
+  filter(Station_ID=="HM3") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_HM3_2020_g, plot_HM3_2021_g, plot_HM3_2022_g, plot_HM3_2023_g, ncol=1, top = "Water table in m at HM3" )
+
+```
+
+HM3 looks very similar to HM1, but slightly higher. This is corresponding with the observations.
+
+Then let's look at the data from BSM:
+
+```{r echo=FALSE}
+plot_BSM1_2021_g <- season_data %>%
+  filter(Station_ID=="BSM1") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM1_2022_g <- season_data %>%
+  filter(Station_ID=="BSM1") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM1_2023_g <- season_data %>%
+  filter(Station_ID=="BSM1") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_BSM1_2021_g, plot_BSM1_2022_g, plot_BSM1_2023_g, ncol=1, top = "Water table in m at BSM1" )
+```
+
+BSM1 has not been working properly after 2021. It seems quite clear that I need to exclude the data from 2022 and 2023.
+
+```{r echo=FALSE}
+plot_BSM2_2021_g <- season_data %>%
+  filter(Station_ID=="BSM2") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM2_2022_g <- season_data %>%
+  filter(Station_ID=="BSM2") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM2_2023_g <- season_data %>%
+  filter(Station_ID=="BSM2") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_BSM2_2021_g, plot_BSM2_2022_g, plot_BSM2_2023_g, ncol=1, top = "Water table in m at BSM2" )
+```
+
+```{r echo=FALSE}
+plot_BSM3_2021_g <- season_data %>%
+  filter(Station_ID=="BSM3") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM3_2022_g <- season_data %>%
+  filter(Station_ID=="BSM3") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_BSM3_2023_g <- season_data %>%
+  filter(Station_ID=="BSM3") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_BSM3_2021_g, plot_BSM3_2022_g, plot_BSM3_2023_g, ncol=1, top = "Water table in m at BSM3" )
+```
+
+Then finally let's look at the data from VSM:
+
+```{r echo=FALSE}
+plot_VSM1_2020_g <- season_data %>%
+  filter(Station_ID=="VSM1") %>%
+  filter(year=='2020') %>%
+  group_by(Date)%>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2020") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
+
+plot_VSM1_2021_g <- season_data %>%
+  filter(Station_ID=="VSM1") %>%
+  filter(year=='2021') %>%
+ggplot(aes(Date,LEVEL)) +
+geom_step(size=0.5) +
+  xlab("2021") + ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
+
+plot_VSM1_2022_g <- season_data %>%
+  filter(Station_ID=="VSM1") %>%
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) +
+ geom_step(size=0.5) +
+  xlab("2022")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
+
+plot_VSM1_2023_g <- season_data %>%
+  filter(Station_ID=="VSM1") %>%
+  filter(year=='2023') %>%
+ggplot(aes(Date,LEVEL)) +
+  geom_step(size=0.5) +
+  xlab("2023")+ ylab("WT (m)")+
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
+
+grid.arrange(plot_VSM1_2020_g, plot_VSM1_2021_g, plot_VSM1_2022_g, plot_VSM1_2023_g, ncol=1, top = "Water table in m at VSM1" )
+
+```
+
+```{r echo=FALSE}
+plot_VSM2_2020_g <- season_data %>% 
+  filter(Station_ID=="VSM2") %>% 
+  filter(year=='2020') %>%
+  group_by(Date)%>% 
+  ggplot(aes(Date,LEVEL)) + 
+  geom_step(size=0.5) + 
+  xlab("2020") + ylab("WT (m)")+ 
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') + 
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_VSM2_2021_g <- season_data %>% 
+  filter(Station_ID=="VSM2") %>% 
+  filter(year=='2021') %>%
+  ggplot(aes(Date,LEVEL)) + 
+  geom_step(size=0.5) + 
+  xlab("2021") + ylab("WT (m)")+ 
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_VSM2_2022_g <- season_data %>% 
+  filter(Station_ID=="VSM2") %>% 
+  filter(year=='2022') %>%
+  ggplot(aes(Date,LEVEL)) + 
+  geom_step(size=0.5) + 
+  xlab("2022")+ ylab("WT (m)")+ 
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+plot_VSM2_2023_g <- season_data %>% 
+  filter(Station_ID=="VSM2") %>% 
+  filter(year=='2023') %>%
+  ggplot(aes(Date,LEVEL)) + 
+  geom_step(size=0.5) + xlab("2023")+ ylab("WT (m)")+ 
+  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
+
+grid.arrange(plot_VSM2_2020_g, plot_VSM2_2021_g, plot_VSM2_2022_g, plot_VSM2_2023_g, ncol=1, top = "Water table in m at VSM2" )
+```
+
+```{r echo=FALSE}
+
+
+# Get unique Station_IDs
+unique_stations <- unique(wt_all$Station_ID)
+
+# Create a separate figure for each Station_ID
+for (station in unique_stations) {
+  station_data <- wt_all%>%
+    filter(Station_ID == station)
+  
+  station_plot <- station_data %>%
+    ggplot(aes(x = as.Date(paste(year, month, day, sep = "-")), y = LEVEL, color = factor(year))) +
+    geom_line() +
+    labs(title = paste("Water Table Levels for Station ID", station),
+         x = "Time",
+         y = "Mean WT",
+         color = "Year") +
+  scale_x_date(labels=date_format('%b %y'), date_breaks = '3 months')+
+  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  print(station_plot)
+}
+```
+
+## Daily mean, max and min water table
+
+```{r warning=FALSE, echo=FALSE}
+# Calculate daily mean, maximum, and minimum levels
+
+daily_means <- season_data %>%
+  group_by(Station_ID, year, month, Date) %>%
+  summarise(daily_mean = mean(LEVEL), daily_max = max(LEVEL), daily_min= min(LEVEL))
+
+daily_means
+
+```
+
+```{r}
+#Testing the summarise_by_time function
+daily_means_2 <- season_data %>%
+  group_by(Station_ID) %>%
+ summarise_by_time(.date_var=DateTime,
+                    .by="day",
+                    daily_mean = mean(LEVEL), daily_max = max(LEVEL), daily_min= min(LEVEL))
+
+daily_means_2
+```
+
+```{r echo=FALSE, warning=FALSE}
+monthly_summary <- season_data %>% 
+  group_by(Station_ID, year, month) %>% 
+  summarise( monthly_mean = mean(LEVEL), monthly_max = max(LEVEL), montly_min = min(LEVEL) )
+print(monthly_summary)
+```
+
+```{r}
+season_data%>%
+  group_by(Station_ID)%>%
+  summarise_by_time(.date_var=DateTime,
+                    .by="season", season_mean = mean(LEVEL), season_max = max(LEVEL), season_min = min(LEVEL) )
+```
+
+```{r}
+total_days_below_minus_0.2 <- daily_means %>% 
+  filter(daily_mean < -0.2) %>% 
+  group_by(Station_ID, year) %>% 
+  summarise(total_days = n_distinct(Date))%>%
+  ungroup()%>%
+ complete(Station_ID, year, fill = list(total_days = 0))
+
+print(total_days_below_minus_0.2)
+```
+
+```{r}
+season_data %>%
+ filter(Station_ID=='VSM2')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = FALSE)
+
+
+```
