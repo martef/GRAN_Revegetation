@@ -195,89 +195,25 @@ The data from HM1 seems correct, with varied values throughout the time period a
 Then we avoid the 'weird' data from the winter periods. I'm not really that interested in the winter time data anyways.
 
 ```{r echo=FALSE, warning=FALSE}
-plot_HM1_2020_g <- season_data %>%
-  filter(Station_ID=="HM1") %>%
-  filter(year=='2020') %>%
-  group_by(Date)%>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(linewidth=0.5) +
-  xlab("2020") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-
-plot_HM1_2021_g <- season_data %>%
-  filter(Station_ID=="HM1") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM1_2022_g <- season_data %>%
-  filter(Station_ID=="HM1") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM1_2023_g <- season_data %>%
-  filter(Station_ID=="HM1") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_HM1_2020_g, plot_HM1_2021_g, plot_HM1_2022_g, plot_HM1_2023_g, ncol=1, top='Water table at HM1')
+season_data %>%
+ filter(Station_ID=='HM1')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at HM1')
 ```
 
 The water table at HM1 is mainly up around 0cm, but with some dips down to as much as -30cm.
 
 ```{r echo=FALSE, warning=FALSE}
-plot_HM2_2020_g <- season_data %>%
-  filter(Station_ID=="HM2") %>%
-  filter(year=='2020') %>%
-  group_by(Date)%>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2020") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-
-plot_HM2_2021_g <- season_data %>%
-  filter(Station_ID=="HM2") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM2_2022_g <- season_data %>%
-  filter(Station_ID=="HM2") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM2_2023_g <- season_data %>%
-  filter(Station_ID=="HM2") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_HM2_2020_g, plot_HM2_2021_g, plot_HM2_2022_g, plot_HM2_2023_g, ncol=1, top='Water table at HM2')
+season_data %>%
+ filter(Station_ID=='HM2')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at HM2')
 ```
 
 Not sure about HM2... It seems very little responsive after 2020, maybe also within 2020...
@@ -285,46 +221,13 @@ Not sure about HM2... It seems very little responsive after 2020, maybe also wit
 I think this one as well is not functioning and I need to exclude the data. I think I can include 2020.
 
 ```{r echo=FALSE}
-plot_HM3_2020_g <- season_data %>%
-  filter(Station_ID=="HM3") %>%
-  filter(year=='2020') %>%
-  group_by(Date)%>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2020") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-
-plot_HM3_2021_g <- season_data %>%
-  filter(Station_ID=="HM3") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM3_2022_g <- season_data %>%
-  filter(Station_ID=="HM3") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_HM3_2023_g <- season_data %>%
-  filter(Station_ID=="HM3") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_HM3_2020_g, plot_HM3_2021_g, plot_HM3_2022_g, plot_HM3_2023_g, ncol=1, top = "Water table in m at HM3" )
-
+season_data %>%
+ filter(Station_ID=='HM3')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at HM3')
 ```
 
 HM3 looks very similar to HM1, but slightly higher. This is corresponding with the observations.
@@ -332,186 +235,58 @@ HM3 looks very similar to HM1, but slightly higher. This is corresponding with t
 Then let's look at the data from BSM:
 
 ```{r echo=FALSE}
-plot_BSM1_2021_g <- season_data %>%
-  filter(Station_ID=="BSM1") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM1_2022_g <- season_data %>%
-  filter(Station_ID=="BSM1") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM1_2023_g <- season_data %>%
-  filter(Station_ID=="BSM1") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_BSM1_2021_g, plot_BSM1_2022_g, plot_BSM1_2023_g, ncol=1, top = "Water table in m at BSM1" )
+season_data %>%
+ filter(Station_ID=='BSM1')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at BSM1')
 ```
 
 BSM1 has not been working properly after 2021. It seems quite clear that I need to exclude the data from 2022 and 2023.
 
 ```{r echo=FALSE}
-plot_BSM2_2021_g <- season_data %>%
-  filter(Station_ID=="BSM2") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM2_2022_g <- season_data %>%
-  filter(Station_ID=="BSM2") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM2_2023_g <- season_data %>%
-  filter(Station_ID=="BSM2") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_BSM2_2021_g, plot_BSM2_2022_g, plot_BSM2_2023_g, ncol=1, top = "Water table in m at BSM2" )
+season_data %>%
+ filter(Station_ID=='BSM2')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at BSM2')
 ```
 
 ```{r echo=FALSE}
-plot_BSM3_2021_g <- season_data %>%
-  filter(Station_ID=="BSM3") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM3_2022_g <- season_data %>%
-  filter(Station_ID=="BSM3") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_BSM3_2023_g <- season_data %>%
-  filter(Station_ID=="BSM3") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_BSM3_2021_g, plot_BSM3_2022_g, plot_BSM3_2023_g, ncol=1, top = "Water table in m at BSM3" )
+season_data %>%
+ filter(Station_ID=='BSM3')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at BSM3')
 ```
 
 Then finally let's look at the data from VSM:
 
 ```{r echo=FALSE}
-plot_VSM1_2020_g <- season_data %>%
-  filter(Station_ID=="VSM1") %>%
-  filter(year=='2020') %>%
-  group_by(Date)%>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2020") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') +
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
-  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
-
-plot_VSM1_2021_g <- season_data %>%
-  filter(Station_ID=="VSM1") %>%
-  filter(year=='2021') %>%
-ggplot(aes(Date,LEVEL)) +
-geom_step(size=0.5) +
-  xlab("2021") + ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
-  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
-
-plot_VSM1_2022_g <- season_data %>%
-  filter(Station_ID=="VSM1") %>%
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) +
- geom_step(size=0.5) +
-  xlab("2022")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
-  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
-
-plot_VSM1_2023_g <- season_data %>%
-  filter(Station_ID=="VSM1") %>%
-  filter(year=='2023') %>%
-ggplot(aes(Date,LEVEL)) +
-  geom_step(size=0.5) +
-  xlab("2023")+ ylab("WT (m)")+
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
-  geom_hline(yintercept=-0.4, linetype='dashed', color='red')
-
-grid.arrange(plot_VSM1_2020_g, plot_VSM1_2021_g, plot_VSM1_2022_g, plot_VSM1_2023_g, ncol=1, top = "Water table in m at VSM1" )
+season_data %>%
+ filter(Station_ID=='VSM1')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at VSM1')
 
 ```
 
 ```{r echo=FALSE}
-plot_VSM2_2020_g <- season_data %>% 
-  filter(Station_ID=="VSM2") %>% 
-  filter(year=='2020') %>%
-  group_by(Date)%>% 
-  ggplot(aes(Date,LEVEL)) + 
-  geom_step(size=0.5) + 
-  xlab("2020") + ylab("WT (m)")+ 
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month') + 
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_VSM2_2021_g <- season_data %>% 
-  filter(Station_ID=="VSM2") %>% 
-  filter(year=='2021') %>%
-  ggplot(aes(Date,LEVEL)) + 
-  geom_step(size=0.5) + 
-  xlab("2021") + ylab("WT (m)")+ 
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_VSM2_2022_g <- season_data %>% 
-  filter(Station_ID=="VSM2") %>% 
-  filter(year=='2022') %>%
-  ggplot(aes(Date,LEVEL)) + 
-  geom_step(size=0.5) + 
-  xlab("2022")+ ylab("WT (m)")+ 
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-plot_VSM2_2023_g <- season_data %>% 
-  filter(Station_ID=="VSM2") %>% 
-  filter(year=='2023') %>%
-  ggplot(aes(Date,LEVEL)) + 
-  geom_step(size=0.5) + xlab("2023")+ ylab("WT (m)")+ 
-  scale_x_date(labels=date_format('%b'), date_breaks = '1 month')+ 
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')
-
-grid.arrange(plot_VSM2_2020_g, plot_VSM2_2021_g, plot_VSM2_2022_g, plot_VSM2_2023_g, ncol=1, top = "Water table in m at VSM2" )
+season_data %>%
+ filter(Station_ID=='BSM2')%>%
+  group_by(year(Date)) %>%
+  plot_time_series(DateTime, LEVEL,
+                   .facet_scales = "free", .smooth=FALSE, 
+                   .interactive = TRUE,
+                   .title='Water table (m) at BSM2')
 ```
 
 ```{r echo=FALSE}
