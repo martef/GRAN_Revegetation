@@ -1,0 +1,248 @@
+---
+title: "Weatherdata variables"
+author: "MarteF"
+format: html
+editor: visual
+---
+
+## Packages needed
+
+```{r Packages needed, include=FALSE}
+library(ggthemes) #usikker
+library(hydroTSM)
+library(zoo)
+library(lubridate)
+library(tidyverse)
+library(timetk)
+
+```
+
+## Uploading data
+
+Data retrieved from aklima.no from weather stations around Namsos and Åfjord (two near Namsos and 1 near Åfjord): Åfjord 1, Namsos stasjon and Overhalla-Unnset.
+
+Åfjord Ii lies close enough to Høydalsmoan NR that I think the data can be used directly.
+
+The weather data for Vestersetermyra, however, needs to be adjusted somewhat. I only have precipitation data from Overhalla-Unnset and temperatures from Namsos stasjon.
+
+There used to be a weather station in Bangdalen (it has records of annual precipitation 1930-2012). The annual precipitation here is about 10% higher than the precipitation at Overhalla-Unnset. I'll adjust the data from recent years that I will use accordingly.
+
+Namsos stasjon lies only 20mas and close to the fjord, which means the temperatures at Vestersetermyra (120mas) should be adjusted slightly. Bragazza 2008 uses -0.6oC per 100m change in altitude, which seems to be more or less the norm. I'll adjust similarily.
+
+```{r Upload datasets, include=FALSE}
+klima_afjord <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_afjord_komplett.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)
+klima_namsosstasjon <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_namsosstasjon.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE) 
+klima_overhalla <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_overhalla.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)
+klima_rodhammer <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/klimadata_2019-2023_rodhammer.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = TRUE)  
+
+#Denne funksjonen får til å laste inn datasettene med spesialkarakterer
+
+#Alle tall er registert som characters i Namsos-settet. Disse må gjøres om.
+
+klima_afjord <- klima_afjord %>% mutate_at(c('Mean_temp'), as.numeric)
+klima_namsosstasjon <- klima_namsosstasjon %>% mutate_at(c('Mean_temp', 'Min_temp'), as.numeric)
+
+
+```
+
+Combining all data into one dataset
+
+```{r warnings=FALSE, results=FALSE}
+climdat <- klima_afjord %>%
+  full_join(klima_namsosstasjon)
+climdat <- climdat %>%
+  full_join(klima_overhalla)
+#Remove one row with alternative information, row 3470
+climdat <- climdat[-3470,]
+```
+
+```{r}
+
+#Create new columns with only year and month
+climdat$Year <- floor_date(climdat$Time, "year")
+climdat$Month <- floor_date(climdat$Time, "month")
+climdat$month <- month(climdat$Time)
+climdat$year <- year(climdat$Time)
+
+#Create julian date column
+climdat$jday <- yday(climdat$Time)
+climdat$month_name <- format(climdat$Time,"%B")
+climdat$month_name <- factor(climdat$month_name, levels = month.name)
+
+```
+
+```{r}
+#rename variables
+unique(climdat$Name)
+climdat$Name[climdat$Name==unique(climdat$Name[1])] <-'Afjord'
+climdat$Name[climdat$Name==unique(climdat$Name[2800])] <-'Namsos'
+climdat$Name[climdat$Name==unique(climdat$Name[3900])] <- 'Overhalla'
+unique(climdat$Name)
+
+#Create longformat with all temperatures in one column
+
+climdat_long <- climdat %>%
+  pivot_longer(cols=c('Min_temp', 'Max_temp', 'Mean_temp'), names_to='Temp_type', values_to='Temp')
+
+#Adjust the data for Vestersetermyra
+climdat <- climdat %>%
+ mutate(Precipitation=case_when(Name=='Overhalla'~ Precipitation *1.10,
+                                TRUE ~ Precipitation))
+climdat <- climdat %>%
+  mutate(Max_temp=case_when(Name=='Namsos'~Max_temp-0.6, 
+                            TRUE~Max_temp)) %>%
+  mutate(Mean_temp=case_when(Name=='Namsos'~Mean_temp-0.6, 
+                            TRUE~Mean_temp)) %>%
+  mutate(Min_temp=case_when(Name=='Namsos'~Min_temp-0.6, 
+                            TRUE~Min_temp))
+  
+```
+
+```{r}
+
+#Subset to growth season (1. May to 30.Sept)
+climdat_season <- climdat %>%     
+  filter(month >= 5 & month <= 9)
+
+#write.csv(climdat, file="Data/climdat.csv") 
+#write.csv(climdat_season, file="Data/climdat_season.csv")
+
+```
+
+## The variables I want to look closer at
+
+-   The mean mean/max/min daily temperature throughout the growth season
+
+-   The mean mean/max/min daily temperature throughout early growth season (May, June, midJuly)
+
+-   The overall precipitation through the growth season
+
+-   The overall precipitation in early growth season (May, June, midJuly)
+
+-   The mean precipitation per month through the growth season
+
+-   The mean precipitation per month in early growth season (May, June, midJuly)
+
+-   Total days without precipitation through growth season
+
+-   Total days without precipitation in early growth season (May, June, midJuly)
+
+-   Extreme precipitation events through growth season
+
+## Temperature
+
+Temperatures in Høydalsmoan
+
+```{r}
+climdat_long %>%
+ filter(Name=='Afjord')%>%
+  group_by(year(Time)) %>%
+ 
+    ggplot(aes(x = jday, y = Temp, color = factor(Temp_type))) +
+    geom_line(na.rm=TRUE) +
+    labs(title = paste("Temperatures at Afjord"),
+         x = "Julian Date",
+         y = "Temperatures in Celsius",
+         color = "Daily temperatures") +
+    theme_minimal() +
+    facet_grid(year~.)+
+    scale_color_viridis_d(option='plasma') + 
+    theme(legend.position = "bottom")
+
+
+```
+
+Temperatures in Høydalsmoan during growth season only
+
+```{r}
+climdat_long %>%
+ filter(Name=='Afjord')%>%
+   filter(month >= 5 & month <= 9)%>%
+  group_by(year(Time)) %>%
+ 
+    ggplot(aes(x = jday, y = Temp, color = factor(Temp_type))) +
+    geom_line(na.rm=TRUE) +
+    labs(title = paste("Temperatures at Afjord"),
+         x = "Julian Date",
+         y = "Temperatures in Celsius",
+         color = "Daily temperatures") +
+    theme_minimal() +
+    facet_grid(year~.)+
+    scale_color_viridis_d(option='plasma') + 
+    theme(legend.position = "bottom")
+```
+
+*Averaged temperatures per month of the year*
+
+```{r}
+klima_namsosstasjon %>%
+  group_by(month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+
+```
+
+*Plot average temperature through out the year*
+
+```{r}
+
+mean_temp_yearly <- klima_namsosstasjon %>%
+  group_by(month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+
+mean_temp_yearly %>%
+  pivot_longer(Min_tempA_mean:Max_tempA_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp)) +
+  geom_col() +
+  facet_wrap(vars(Means))
+```
+
+*Average temperatures by specific months and years*
+
+```{r}
+
+klima_namsosstasjon %>%
+  group_by(year, month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE)
+```
+
+```{r}
+klima_namsosstasjon %>%
+  filter(!is.na(Time))%>%
+  group_by(year, month) %>%
+summarise_at(vars(Min_tempA, Mean_tempA, Max_tempA), list(mean = mean), na.rm = TRUE) %>%
+pivot_longer(Min_tempA_mean:Max_tempA_mean, names_to = "Means", values_to = "Temp") %>%
+  ggplot(aes(x = month, y = Temp), na.rm=TRUE) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(vars(year, Means), ncol=3)
+```
+
+*Average temperatures through the growing season (May to October)*
+
+```{r}
+growing_season_namsos <- klima_namsosstasjon %>%
+  filter(month >4 & month <11) 
+growing_season_namsos%>%
+summarise_at(vars(Min_tempA, Max_tempA, Mean_tempA), list(mean = mean), na.rm = TRUE)
+
+```
+
+```{r}
+klima_namsosstasjon %>%
+  filter(month >4 & month <10)%>%
+  group_by(year) %>%
+summarise_at(vars(Min_tempA, Max_tempA, Mean_tempA), list(mean = mean), na.rm = TRUE)
+
+```

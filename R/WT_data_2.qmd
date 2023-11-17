@@ -106,19 +106,10 @@ wt_all$year <- year(wt_all$Date)
 
 wt_all <- wt_all%>%filter((between(Date, as.Date('2020-06-12'), as.Date('2023-09-01')))) 
 
+# write.csv(wt_all, "C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/wt_all.csv")
+
 #Clean up the environment a bit. Remove excess dataframes
-rm(HM1, HM2, VSM1,VSM2, BSM1,BSM2, BSM3, list_df)
-```
-
-## Filter data for the growth season (May to October)
-
-I only want to include the data for the growth season. I'm including all of May and all of September for now (except for 2023, where we cut the data to end of August, as we retrieved the water loggers in the beginning of September). Maybe May needs to be shortened to mid, but lets look at the data first.
-
-```{r}
-
-season_data <- wt_all %>% 
-
-  filter((year >= 2020 & year < 2023) & (month >= 5 & month <= 9) | (year == 2023) & (month >= 5 & month<9)) 
+rm(HM1, HM2, HM3, VSM1,VSM2, BSM1,BSM2, BSM3, list_df)
 
 ```
 
@@ -132,7 +123,9 @@ I need to aggregate the data to show:
 
 \- mean/max/min through growth season
 
-\- how many days with lower than -20cm per month through growth season
+\- how many days with lower than -20cm through growth season
+
+-   max consecutive days with lower than -20cm through growth season
 
 ## Plotting the raw data
 
@@ -190,9 +183,22 @@ grid.arrange(plot_HM1_2020, plot_HM1_2021, plot_HM1_2022, plot_HM1_2023, ncol=1)
 
 The data from HM1 seems correct, with varied values throughout the time period and with a 'roof' at about 0cm, although the data from Jan to May 2021 seems incorrect both by being extremely low in the beginning of the year when the ground is frozen and covered by snow and extremely high (0.5m) in March to mid-May. HM1 is set on higher, drier grounds than HM2 and HM3, with shallow(-ish) peat. These values seems implausible.
 
-## Subsetting for only the growth period midMay-midSept
+## Filter data for the growth season (May to October)
 
-Then we avoid the 'weird' data from the winter periods. I'm not really that interested in the winter time data anyways.
+I only want to include the data for the growth season. I'm including all of May and all of September for now (except for 2023, where we cut the data to end of August, as we retrieved the water loggers in the beginning of September). Maybe May needs to be shortened to mid, but lets look at the data first. Then we avoid the 'weird' data from the winter periods. I'm not really that interested in the winter time data anyways.
+
+```{r}
+season_data <- wt_all %>%     
+  filter((year >= 2020 & year < 2023) & (month >= 5 & month <= 9) | (year == 2023) & (month >= 5 & month<9))
+
+#Create julian date column
+season_data$jday <- yday(season_data$Date)
+season_data$month_name <- format(season_data$Date,"%B")
+season_data$month_name <- factor(season_data$month_name, levels = month.name)
+# write.csv(season_data, file="../Data/season_data.csv") 
+```
+
+Then lets look at the data per station again
 
 ```{r echo=FALSE, warning=FALSE}
 season_data %>%
@@ -289,47 +295,83 @@ season_data %>%
                    .title='Water table (m) at BSM2')
 ```
 
+Similar plots created by ggplot. I have to use Julian dates to get the plots aligned by year.
+
 ```{r echo=FALSE}
-
-
 # Get unique Station_IDs
-unique_stations <- unique(wt_all$Station_ID)
+unique_stations <- unique(season_data$Station_ID)
 
 # Create a separate figure for each Station_ID
 for (station in unique_stations) {
-  station_data <- wt_all%>%
+  station_data <- season_data%>%
     filter(Station_ID == station)
   
-  station_plot <- station_data %>%
-    ggplot(aes(x = as.Date(paste(year, month, day, sep = "-")), y = LEVEL, color = factor(year))) +
-    geom_line() +
+  station_season_plot <- station_data %>%
+    ggplot(aes(x = jday, y = LEVEL, color = factor(month_name))) +
+    geom_line(na.rm=TRUE) +
     labs(title = paste("Water Table Levels for Station ID", station),
-         x = "Time",
+         x = "Julian Date",
          y = "Mean WT",
-         color = "Year") +
-  scale_x_date(labels=date_format('%b %y'), date_breaks = '3 months')+
-  geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+         color = "Month") +
+    geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
     theme_minimal() +
+    facet_grid(year~.)+
+    scale_color_viridis_d() + 
     theme(legend.position = "bottom")
   
-  print(station_plot)
+  print(station_season_plot)
 }
 ```
 
-## Daily mean, max and min water table
+```{r echo=FALSE}
 
-```{r warning=FALSE, echo=FALSE}
-# Calculate daily mean, maximum, and minimum levels
-
-daily_means <- season_data %>%
-  group_by(Station_ID, year, month, Date) %>%
-  summarise(daily_mean = mean(LEVEL), daily_max = max(LEVEL), daily_min= min(LEVEL))
-
-daily_means
+ season_plot <- season_data %>%
+    ggplot(aes(x = jday, y = LEVEL, color = factor(month_name))) +
+    geom_line() +
+    labs(title = paste("Water Table Levels for Station ID", station),
+         x = "Julian Date",
+         y = "Mean WT",
+         color = "Month") +
+    geom_hline(yintercept=-0.2, linetype='dashed', color='blue')+
+  scale_color_viridis_d()+  
+  theme_minimal() +
+    facet_grid(Station_ID~year, scales="free_y")+
+    theme(legend.position = "bottom")
+  
+  print(season_plot)
 
 ```
 
-```{r}
+## Remove the data from the malfunctioning stations
+
+```{r warning=FALSE}
+season_data <- season_data %>%
+  filter(!(year %in%  c('2022', '2023') & Station_ID=='BSM1')) %>%
+  filter (!(year %in% c('2021', '2022', '2023') & Station_ID=='HM2'))
+
+#Update the csv as well
+#write.csv(season_data, file="../Data/season_data.csv")                     
+```
+
+## Daily mean, max and min water table within growth season
+
+```{r warning=FALSE}
+# Calculate daily mean, maximum, and minimum levels
+
+daily_means <- season_data %>%
+  group_by(Station_ID, Date) %>%
+  mutate(daily_mean = mean(LEVEL), daily_max = max(LEVEL), daily_min= min(LEVEL)) 
+
+daily_means <- daily_means %>%
+  select(-c('Time','LEVEL', 'TEMPERATURE', 'DateTime'))
+
+daily_means<- unique(daily_means)
+
+#write.csv(daily_means, file="../Data/daily_means.csv")
+daily_means
+```
+
+```{r echo=FALSE, include=FALSE}
 #Testing the summarise_by_time function
 daily_means_2 <- season_data %>%
   group_by(Station_ID) %>%
@@ -342,36 +384,148 @@ daily_means_2
 
 ```{r echo=FALSE, warning=FALSE}
 monthly_summary <- season_data %>% 
-  group_by(Station_ID, year, month) %>% 
-  summarise( monthly_mean = mean(LEVEL), monthly_max = max(LEVEL), montly_min = min(LEVEL) )
+ group_by(Station_ID)%>%
+  summarise_by_time(.date_var=DateTime, 
+                    .by="month",
+                    monthly_mean = mean(LEVEL), monthly_max = max(LEVEL), monthly_min = min(LEVEL) )
+
+monthly_summary$month <- format(monthly_summary$DateTime, '%B')
+monthly_summary$month <- factor(monthly_summary$month, levels = month.name)
+monthly_summary$year <- year(monthly_summary$DateTime)
 print(monthly_summary)
 ```
 
-```{r}
-season_data%>%
-  group_by(Station_ID)%>%
-  summarise_by_time(.date_var=DateTime,
-                    .by="season", season_mean = mean(LEVEL), season_max = max(LEVEL), season_min = min(LEVEL) )
-```
 
 ```{r}
+monthly_summary%>%
+ ggplot() +
+  geom_point(aes(x= month, y=monthly_min, color='blue')) +
+  geom_point(aes(x=month, y=monthly_mean, color='green'))+
+  geom_point(aes(x=month, y=monthly_max, color='red')) +
+  labs(x = "Month", y = "Water table", color="Water table levels (min, mean, max)") +
+theme_minimal() +
+    facet_grid(Station_ID~year, scales="free_y")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+    theme(legend.position = "bottom")
+```
+This plot isn't perfect, as I don't know how to change the labels for various geom_lines. It should ideally be transformed to a long dataset with all min,max and mean in the same column.
+
+
+Overall summary for the whole growth season
+
+```{r echo=FALSE}
+gs <-season_data%>%
+  group_by(Station_ID)%>%
+  summarise_by_time(.date_var=DateTime,
+                    .by="year", gs_mean = mean(LEVEL), gs_max = max(LEVEL), gs_min = min(LEVEL) )
+```
+
+
+## Days with WT below -0.2m
+
+```{r echo=FALSE}
 total_days_below_minus_0.2 <- daily_means %>% 
   filter(daily_mean < -0.2) %>% 
   group_by(Station_ID, year) %>% 
   summarise(total_days = n_distinct(Date))%>%
   ungroup()%>%
- complete(Station_ID, year, fill = list(total_days = 0))
+ complete(Station_ID, year, fill = list(total_days = 0)) %>%
+ungroup()
+print(total_days_below_minus_0.2, n = Inf)
 
-print(total_days_below_minus_0.2)
+# Create a data frame with all combinations of year, month, and Station_ID
+all_combinations <- expand.grid(
+  year = unique(daily_means$year),
+  Station_ID = unique(daily_means$Station_ID)
+)
+
+# Join the data frame with all combinations with the calculated data
+total_days_below_minus_0.2_complete <- left_join(all_combinations, total_days_below_minus_0.2, by = c("year", "Station_ID"))
+total_days_below_minus_0.2_complete$total_days[is.na(total_days_below_minus_0.2_complete$total_days)] <- 0
+
+#This is not perfect, as it creates zeros for years that were not measured. BSM was not measured in 2020.
+
+total_days_below_minus_0.2_complete %>%
+   filter(!(Station_ID %in% c("BSM1", "BSM2", "BSM3") & year == 2020))
+
+total_days_below_minus_0.2_complete
+```
+
+```{r echo=FALSE}
+# Count the days with a daily mean below -0.2 per month and station
+days_below_minus_0.2_month <- daily_means %>%
+  filter(daily_mean < -0.2) %>%
+  group_by(Station_ID, year, month) %>%
+  summarise(total_days = n_distinct(Date))%>%
+ ungroup()
+
+# Create a data frame with all combinations of year, month, and Station_ID
+all_combinations <- expand.grid(
+  year = unique(daily_means$year),
+  month = unique(daily_means$month),
+  Station_ID = unique(daily_means$Station_ID)
+)
+
+# Join the data frame with all combinations with the calculated data
+days_below_minus_0.2_month_complete <- left_join(all_combinations, days_below_minus_0.2_month, by = c("year", "month", "Station_ID"))
+days_below_minus_0.2_month_complete$total_days[is.na(days_below_minus_0.2_month_complete$total_days)] <- 0
+
+#This is not perfect either, as it creates zeros for years that were not measured. BSM was not measured in 2020.
+
+days_below_minus_0.2_month_complete %>%
+   filter(!(Station_ID %in% c("BSM1", "BSM2", "BSM3") & year == 2020))
+```
+
+```{r echo=FALSE}
+
+ggplot(total_days_below_minus_0.2_complete, aes(x = Station_ID, y = total_days, fill = Station_ID)) +
+  geom_bar(position="dodge", stat = "identity") +
+  labs(x = "", y = "Total Days", fill='Station') +
+  theme_minimal()+
+  theme(axis.text.x = element_blank())+
+  facet_wrap(~year)
+
 ```
 
 ```{r}
-season_data %>%
- filter(Station_ID=='VSM2')%>%
-  group_by(year(Date)) %>%
-  plot_time_series(DateTime, LEVEL,
-                   .facet_scales = "free", .smooth=FALSE, 
-                   .interactive = FALSE)
+ggplot(days_below_minus_0.2_month_complete, aes(x = month, y = total_days, fill = Station_ID)) +
+  geom_col(position='dodge') +
+  labs(x = "Month", y = "Total Days", fill='Station') +
+  theme_minimal()+
+facet_wrap(~year)
 
+```
 
+## Consecutive days with WT below -0.2m
+
+```{r}
+
+df <- daily_means %>%
+  mutate(consecutive_days = daily_mean < -0.2) %>%
+  group_by(Station_ID, year) %>%
+  mutate(consecutive_days = cumsum(consecutive_days) - cummax((!consecutive_days) * cumsum(consecutive_days))) %>%
+  ungroup()
+
+result <- df %>%
+  group_by(Station_ID, year) %>%
+  summarise(consecutive_days_count = max(consecutive_days)) %>%
+  ungroup()
+
+result
+```
+
+I now have all the data I need to answer my questions. Now to create variables that I can include with the vegetation data.
+
+I need to create one table with data of growth season max/min/mean, total days \<-0.2 and consecutive days with \<-0.2 from each station each year
+
+```{r}
+gs$year <- year(gs$DateTime)
+gs2 <- gs %>% select(c('gs_mean', 'gs_max', 'gs_min','Station_ID','year'))
+
+final_variables <- result %>%
+  full_join(gs2, by=c('Station_ID','year'))
+final_variables <- final_variables %>%
+  full_join(total_days_below_minus_0.2_complete, by=c('Station_ID', 'year'))
+
+# write.csv(final_variables, '../Data/WT_variables.csv')
 ```

@@ -1,0 +1,63 @@
+---
+title: "GLMM GRAN Vegetation"
+author: "Marte Fandrem"
+format: pdf
+editor: visual
+---
+
+```{r Packages needed, include=FALSE, return=FALSE, warning=FALSE}
+library(tidyverse)
+library(lme4) 
+library(merTools) 
+library(glmmTMB)
+library(brms)
+library(modelr)
+library(nlme)
+
+```
+
+### Upload and clean dataset
+
+```{r Upload datasets, include=FALSE}
+df <- readr::read_delim('C:/Users/martef/DokumenterIntern/GitHub/GRAN_Revegetation/Data/Revegetering_alldata.csv', 
+                                  delim = ';',
+                                  locale = locale('se', encoding = 'ISO8859-1'),
+                                  col_names = FALSE)
+
+#need to switch rows and columns
+reveg = data.frame(t(df)) #Transposing
+names(reveg) <- reveg[1,] #Copying header names from row 1
+reveg <- reveg[-1,] #Removing row 1
+
+reveg$year <- substr(reveg$Date, 1,4) #Creating columns for year and month
+reveg$month <- substr(reveg$Date, 6,7)
+reveg <- reveg%>% rename(Location = Localition) #Fix bad spelling
+reveg[reveg=='<1'] <- '0.1' #change all <1 to 0.1
+reveg <- reveg %>% mutate_at(c('Location', 'Sublocation', 'Block', 'Treatment', 'year', 'month'), as.factor)
+reveg <- reveg %>% mutate_at(c(7:36), as.numeric) #Change from character to numeric on multiple columns
+reveg <- reveg %>% 
+  mutate_at(c(9:36), ~replace_na(.,0)) #Replacing NAs with zeros
+
+reveg_long <-reveg%>%
+  pivot_longer(Sphagnum:Temp_water, names_to = 'functional_group', values_to = "cover") 
+
+```
+
+**My study questions:**
+
+1.  How well does Sphagnum establish when applied as fragments onto bare peat compared to the controls?
+2.  Will altering the microenvironment by adding mulch alone give a positive effect on natural establishment of Sphagnum and other plants compared to the controls?
+3.  Is the establishment rate of Sphagnum cover related to species specific traits of the Sphagnum species?
+4.  How well does the treatments compare to reference sites relative to the controls?
+
+**I'll start with analysing Sphagnum cover.**
+
+## Sphagnum cover
+
+I want to investigate the relationship between Sphagnum cover and time since establishment compared with controls and mulch treatment.
+
+This is tested with generalized linear mixed models, as my values are nested:
+
+*cover **value** in percentage within a treatment (0-100%)\<- **block** of treatments (C, M, Sx2) \<- repeated treatments on a **sublocation** (4 blocks)\<- repeated sublocations on a **location** (3 (or 2))*
+
+y\~ax+b
